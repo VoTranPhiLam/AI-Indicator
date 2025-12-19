@@ -40,6 +40,35 @@ This system automatically tests technical indicators with all parameter combinat
 
 ## 🚀 Quick Start
 
+### Two Ways to Use
+
+#### Option 1: 🖥️ **GUI (Recommended for Beginners)**
+
+Beautiful web interface with interactive charts!
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Launch GUI
+streamlit run gui_app.py
+```
+
+Then open browser at: **http://localhost:8501**
+
+**Features:**
+- ✅ Visual parameter configuration with sliders
+- ✅ Real-time progress tracking
+- ✅ Interactive charts (Bar, Scatter, Heatmap)
+- ✅ One-click CSV download
+- ✅ No coding required!
+
+📖 **See [HUONG_DAN_GUI.md](HUONG_DAN_GUI.md) for detailed GUI guide (Vietnamese)**
+
+---
+
+#### Option 2: 💻 **Command Line (For Automation)**
+
 ### Prerequisites
 
 ```bash
@@ -94,11 +123,24 @@ Performance:
 
 ```
 AI-Indicator/
-├── backtest_optimizer.py      # Main optimization engine
-├── generate_sample_data.py    # Sample data generator
-├── AUDCAD15.csv               # Input: OHLCV data (M15)
-├── results.csv                # Output: All test results
-└── README.md                  # Documentation
+├── gui_app.py                  # 🖥️ GUI Application (Streamlit)
+├── backtest_optimizer.py       # 💻 CLI Optimization Engine
+├── quick_test.py               # ⚡ Quick Test (16 combinations)
+├── generate_sample_data.py     # 📊 Sample Data Generator
+├── run_gui.sh                  # 🚀 GUI Launch Script
+│
+├── AUDCAD15.csv                # 📁 Input: OHLCV Data (M15)
+├── results.csv                 # 📄 Output: Full Results
+├── quick_test_results.csv      # 📄 Output: Quick Test Results
+│
+├── requirements.txt            # 📦 Python Dependencies
+├── .gitignore                  # 🚫 Git Ignore Rules
+│
+├── README.md                   # 📖 Documentation (English)
+├── HUONG_DAN.md                # 📖 CLI Guide (Vietnamese)
+├── HUONG_DAN_GUI.md            # 📖 GUI Guide (Vietnamese)
+├── GUI_FEATURES.md             # 📖 GUI Features Overview
+└── QUICK_START.txt             # 📖 Quick Reference
 ```
 
 ## 📈 Input Data Format
