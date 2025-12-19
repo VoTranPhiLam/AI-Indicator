@@ -10,12 +10,19 @@ This system automatically tests technical indicators with all parameter combinat
 
 ## ✨ Features
 
+### Core Features
 - **Complete Backtesting Engine**: Candle-by-candle simulation with no look-ahead bias
 - **Grid Search Optimization**: Tests all combinations of indicator parameters
 - **Multi-Metric Evaluation**: Profit, win rate, max drawdown, profit factor
 - **Smart Scoring Function**: Balances profitability with stability
-- **Clean Output**: Top 10 results + full CSV export
 - **Modular Architecture**: Easy to extend to other indicators
+
+### NEW: Multi-Symbol Multi-Timeframe Support
+- **Batch Processing**: Test multiple symbols and timeframes simultaneously
+- **CSV Folder Scanning**: Automatically detect and parse CSV files
+- **No Header Required**: Works with real MT4/MT5 CSV exports
+- **Comparison Charts**: Compare results across symbols and timeframes
+- **Unified Results**: Single CSV export with all test results
 
 ## 📊 Current Implementation
 
@@ -40,34 +47,55 @@ This system automatically tests technical indicators with all parameter combinat
 
 ## 🚀 Quick Start
 
-### Two Ways to Use
+### Three Ways to Use
 
-#### Option 1: 🖥️ **GUI (Recommended for Beginners)**
+#### Option 1: 🌐 **Multi-Symbol GUI (NEW - Recommended!)**
 
-Beautiful web interface with interactive charts!
+Test multiple symbols and timeframes simultaneously!
 
 ```bash
 # Install dependencies
 pip install -r requirements.txt
 
-# Launch GUI
-streamlit run gui_app.py
+# Generate sample files (or use your own)
+python generate_multi_csv.py
+
+# Launch Multi-Symbol GUI
+streamlit run gui_app_multi.py
 ```
 
-Then open browser at: **http://localhost:8501**
+**Features:**
+- ✅ **Batch processing**: Test 10+ files at once
+- ✅ **Auto-scan CSV folder**: Detects all files automatically
+- ✅ **Multiple symbols**: AUDUSD, EURUSD, GBPUSD, USDJPY, etc.
+- ✅ **Multiple timeframes**: M5, M15, M30, H1, H4, D1
+- ✅ **No header required**: Works with MT4/MT5 CSV format
+- ✅ **Comparison charts**: Compare performance across symbols/timeframes
+
+📖 **See [HUONG_DAN_MULTI_GUI.md](HUONG_DAN_MULTI_GUI.md) for complete guide (Vietnamese)**
+
+---
+
+#### Option 2: 🖥️ **Single-File GUI (For Individual Testing)**
+
+Beautiful web interface for testing one file at a time!
+
+```bash
+# Launch Single-File GUI
+streamlit run gui_app.py
+```
 
 **Features:**
 - ✅ Visual parameter configuration with sliders
 - ✅ Real-time progress tracking
 - ✅ Interactive charts (Bar, Scatter, Heatmap)
 - ✅ One-click CSV download
-- ✅ No coding required!
 
 📖 **See [HUONG_DAN_GUI.md](HUONG_DAN_GUI.md) for detailed GUI guide (Vietnamese)**
 
 ---
 
-#### Option 2: 💻 **Command Line (For Automation)**
+#### Option 3: 💻 **Command Line (For Automation)**
 
 ### Prerequisites
 
@@ -123,34 +151,83 @@ Performance:
 
 ```
 AI-Indicator/
-├── gui_app.py                  # 🖥️ GUI Application (Streamlit)
-├── backtest_optimizer.py       # 💻 CLI Optimization Engine
-├── quick_test.py               # ⚡ Quick Test (16 combinations)
-├── generate_sample_data.py     # 📊 Sample Data Generator
-├── run_gui.sh                  # 🚀 GUI Launch Script
+├── 🌐 Multi-Symbol GUI (NEW!)
+│   ├── gui_app_multi.py           # Multi-Symbol GUI Application
+│   ├── run_multi_gui.bat          # Windows Launcher (Multi)
+│   ├── generate_multi_csv.py      # Generate Sample Multi-Files
+│   └── HUONG_DAN_MULTI_GUI.md     # Multi-GUI Guide (Vietnamese)
 │
-├── AUDCAD15.csv                # 📁 Input: OHLCV Data (M15)
-├── results.csv                 # 📄 Output: Full Results
-├── quick_test_results.csv      # 📄 Output: Quick Test Results
+├── 🖥️ Single-File GUI
+│   ├── gui_app.py                 # Single-File GUI Application
+│   ├── run_gui.bat                # Windows Launcher (Single)
+│   ├── run_gui.sh                 # Linux/Mac Launcher
+│   ├── HUONG_DAN_GUI.md           # GUI Guide (Vietnamese)
+│   └── GUI_FEATURES.md            # GUI Features Overview
 │
-├── requirements.txt            # 📦 Python Dependencies
-├── .gitignore                  # 🚫 Git Ignore Rules
+├── 💻 CLI Applications
+│   ├── backtest_optimizer.py      # Full Optimizer (650 tests)
+│   ├── quick_test.py              # Quick Test (16 tests)
+│   ├── generate_sample_data.py    # Single-File Data Generator
+│   ├── HUONG_DAN.md               # CLI Guide (Vietnamese)
+│   └── QUICK_START.txt            # Quick Reference
 │
-├── README.md                   # 📖 Documentation (English)
-├── HUONG_DAN.md                # 📖 CLI Guide (Vietnamese)
-├── HUONG_DAN_GUI.md            # 📖 GUI Guide (Vietnamese)
-├── GUI_FEATURES.md             # 📖 GUI Features Overview
-└── QUICK_START.txt             # 📖 Quick Reference
+├── 📁 Data & Results
+│   ├── CSV/                       # Folder for multi-symbol CSVs
+│   │   ├── AUDUSD5.csv           # AUDUSD M5 data
+│   │   ├── AUDUSD15.csv          # AUDUSD M15 data
+│   │   ├── EURUSD5.csv           # EURUSD M5 data
+│   │   └── ...                    # More symbol/timeframe files
+│   ├── AUDCAD15.csv               # Single-file test data
+│   ├── results.csv                # CLI full results
+│   └── quick_test_results.csv     # CLI quick results
+│
+├── 📦 Configuration
+│   ├── requirements.txt           # Python Dependencies
+│   ├── .gitignore                 # Git Ignore Rules
+│   └── CACH_CHAY_GUI.txt         # How to Run GUI (Vietnamese)
+│
+└── 📖 Documentation
+    ├── README.md                  # Main Documentation (English)
+    ├── HUONG_DAN.md               # CLI Guide (Vietnamese)
+    ├── HUONG_DAN_GUI.md           # Single-GUI Guide (Vietnamese)
+    ├── HUONG_DAN_MULTI_GUI.md     # Multi-GUI Guide (Vietnamese)
+    ├── GUI_FEATURES.md            # GUI Features Overview
+    ├── QUICK_START.txt            # Quick Reference
+    └── CACH_CHAY_GUI.txt          # Running Instructions
 ```
 
 ## 📈 Input Data Format
 
-CSV file with the following columns:
+### Format 1: With Header (Original)
+
+```csv
+Date,Time,Open,High,Low,Close,Volume
+2024.01.01,00:00,0.89500,0.89520,0.89480,0.89510,150
+2024.01.01,00:15,0.89510,0.89530,0.89490,0.89520,200
+```
+
+### Format 2: Without Header (NEW - MT4/MT5)
 
 ```
-Date, Time, Open, High, Low, Close, Volume
-2024.01.01, 00:00, 0.89500, 0.89520, 0.89480, 0.89510, 150
+2025.12.19	3:00	0.66423	0.6643	0.66399	0.6642	156
+2025.12.19	3:05	0.66421	0.66426	0.66377	0.66378	178
+2025.12.19	3:10	0.66377	0.66386	0.66362	0.66385	159
 ```
+
+**Features:**
+- ✅ Auto-detects header presence
+- ✅ Supports tab or space separation
+- ✅ Works with real MT4/MT5 CSV exports
+- ✅ No manual conversion needed
+
+**File Naming for Multi-Symbol:**
+- Format: `SYMBOL` + `MINUTES` + `.csv`
+- Examples:
+  - `AUDUSD5.csv` → AUDUSD M5 (5 minutes)
+  - `EURUSD15.csv` → EURUSD M15 (15 minutes)
+  - `GBPUSD30.csv` → GBPUSD M30 (30 minutes)
+  - `USDJPY60.csv` → USDJPY H1 (60 minutes)
+  - `AUDUSD1440.csv` → AUDUSD D1 (1440 minutes)
 
 The system automatically normalizes to:
 ```
