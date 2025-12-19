@@ -15,27 +15,46 @@ from typing import Dict, List, Tuple, Optional
 # DATA LOADING
 # ============================================================================
 
-def load_data(filepath: str) -> pd.DataFrame:
+def load_data(filepath: str, has_header: bool = None) -> pd.DataFrame:
     """
     Load and normalize OHLCV data from CSV file.
 
+    Supports two formats:
+    1. With header: Date,Time,Open,High,Low,Close,Volume
+    2. Without header (auto-detect): First row is data
+
     Args:
         filepath: Path to CSV file
+        has_header: True if CSV has header, False if not, None for auto-detect
 
     Returns:
         DataFrame with normalized columns: timestamp, open, high, low, close, volume
     """
     print(f"Loading data from {filepath}...")
 
-    # Read CSV
-    df = pd.read_csv(filepath)
+    # Auto-detect header or use specified value
+    if has_header is None:
+        # Try to detect by reading first line
+        with open(filepath, 'r') as f:
+            first_line = f.readline().strip()
+            # If first line contains 'Date' or 'Time', it's a header
+            has_header = 'date' in first_line.lower() or 'time' in first_line.lower()
 
-    # Normalize column names to lowercase
-    df.columns = df.columns.str.lower()
+    # Read CSV with or without header
+    if has_header:
+        df = pd.read_csv(filepath)
+        df.columns = df.columns.str.lower()
+    else:
+        # No header - define column names
+        df = pd.read_csv(
+            filepath,
+            header=None,
+            names=['date', 'time', 'open', 'high', 'low', 'close', 'volume']
+        )
 
     # Combine Date and Time into timestamp
     if 'date' in df.columns and 'time' in df.columns:
-        df['timestamp'] = pd.to_datetime(df['date'] + ' ' + df['time'])
+        df['timestamp'] = pd.to_datetime(df['date'].astype(str) + ' ' + df['time'].astype(str))
         df = df.drop(['date', 'time'], axis=1)
     elif 'timestamp' not in df.columns:
         raise ValueError("CSV must contain either 'timestamp' or 'date'+'time' columns")
