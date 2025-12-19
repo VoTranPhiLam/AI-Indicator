@@ -1,0 +1,99 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║              CÁCH CHẠY GUI - AI-INDICATOR                              ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+📍 BẠN ĐANG Ở: D:\AI-Indicator>
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ CÁCH 1: SỬ DỤNG FILE .BAT (Dễ NHẤT - Windows)
+
+   1. Double-click file:  run_gui.bat
+
+   2. Hoặc trong Command Prompt:
+      D:\AI-Indicator> run_gui.bat
+
+   3. Đợi trình duyệt tự động mở
+      Nếu không tự mở, vào: http://localhost:8501
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ CÁCH 2: DÙNG LỆNH STREAMLIT (Chuẩn)
+
+   D:\AI-Indicator> streamlit run gui_app.py
+
+   ⚠️  QUAN TRỌNG: PHẢI dùng "streamlit run", KHÔNG dùng "python"!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ CÁCH SAI (Bạn đang dùng)
+
+   D:\AI-Indicator> python gui_app.py  ❌ SAI!
+
+   Lỗi:
+   - Nhiều warnings về "ScriptRunContext"
+   - Không mở được browser
+   - Không có giao diện
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 KIỂM TRA CÀI ĐẶT
+
+   1. Kiểm tra Streamlit đã cài chưa:
+      D:\AI-Indicator> streamlit --version
+
+   2. Nếu chưa cài, chạy:
+      D:\AI-Indicator> pip install -r requirements.txt
+
+   3. Sau đó chạy lại:
+      D:\AI-Indicator> streamlit run gui_app.py
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📺 SAU KHI CHẠY ĐÚNG, BẠN SẼ THẤY:
+
+   D:\AI-Indicator> streamlit run gui_app.py
+
+   You can now view your Streamlit app in your browser.
+
+     Local URL: http://localhost:8501
+     Network URL: http://192.168.x.x:8501
+
+   → Trình duyệt tự động mở
+   → Giao diện GUI xuất hiện
+   → Có sidebar bên trái để cấu hình
+   → Có charts và tables
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 MẸO
+
+   - Dùng file run_gui.bat để chạy nhanh nhất (Windows)
+   - Nhấn Ctrl+C trong terminal để thoát
+   - Nếu port 8501 bị chiếm, dùng port khác:
+     D:\AI-Indicator> streamlit run gui_app.py --server.port 8502
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📞 VẪN BỊ LỖI?
+
+   1. Check Python version: python --version
+      (Cần Python 3.7+)
+
+   2. Cài lại dependencies:
+      pip install --upgrade -r requirements.txt
+
+   3. Test lại:
+      streamlit run gui_app.py
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TÓM TẮT:
+
+   ✅ ĐÚNG:  streamlit run gui_app.py
+   ✅ ĐÚNG:  run_gui.bat (double-click)
+   ❌ SAI:   python gui_app.py
+
+╔════════════════════════════════════════════════════════════════════════╗
+║                    CHÚC BẠN THÀNH CÔNG! 🚀                             ║
+╚════════════════════════════════════════════════════════════════════════╝
