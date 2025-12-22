@@ -545,7 +545,9 @@ if st.session_state.optimization_done and st.session_state.all_results is not No
 
     st.dataframe(
         display_df[[
-            'symbol', 'timeframe', 'rsi_period', 'overbought', 'oversold',
+            'symbol', 'timeframe',
+            'tenkan_period', 'kijun_period', 'senkou_b_period',
+            'rsi_period', 'rsi_buy_threshold', 'rsi_sell_threshold',
             'total_profit_pips', 'win_rate', 'num_trades',
             'max_drawdown_pct', 'score', 'valid'
         ]],
@@ -592,7 +594,7 @@ if st.session_state.optimization_done and st.session_state.all_results is not No
             y='total_profit_pips',
             color='symbol',
             size='score',
-            hover_data=['timeframe', 'rsi_period', 'overbought', 'oversold'],
+            hover_data=['timeframe', 'tenkan_period', 'kijun_period', 'rsi_period', 'rsi_buy_threshold'],
             title="Win Rate vs Profit (Size = Score)",
             labels={'win_rate': 'Win Rate (%)', 'total_profit_pips': 'Profit (pips)'}
         )
