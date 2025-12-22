@@ -292,15 +292,36 @@ with st.sidebar:
     # Trading Parameters
     st.subheader("💰 Tham Số Trading")
 
-    col7, col8 = st.columns(2)
+    col7, col8, col9 = st.columns(3)
     with col7:
         risk_reward_ratio = st.number_input("Risk:Reward Ratio", 0.5, 5.0, 1.2, 0.1)
         sl_buffer_pips = st.number_input("SL Buffer (pips)", 0.0, 10.0, 3.0, 0.5)
     with col8:
         bars_check_swing = st.number_input("Bars Check Swing", 1, 20, 5, 1)
         spread_pips = st.number_input("Spread (pips)", 0.1, 10.0, 1.2, 0.1)
+    with col9:
+        initial_balance = st.number_input("Initial Balance ($)", 100.0, 1000000.0, 10000.0, 100.0,
+                                         help="Equity bắt đầu backtest")
+        max_lot_size = st.number_input("Max Lot Size", 0.01, 100.0, 100.0, 0.01,
+                                      help="Khối lượng tối đa cho phép")
 
-    lot_size = st.number_input("Lot Size", 0.01, 10.0, 0.01, 0.01)
+    st.markdown("---")
+    st.subheader("📊 Quản Lý Risk")
+
+    col10, col11 = st.columns(2)
+    with col10:
+        use_percent_risk = st.checkbox("Dùng % Risk (thay vì Fixed Lot)", value=False,
+                                      help="Nếu tick: lot size tính theo % risk. Nếu không: dùng Fixed Lot Size")
+    with col11:
+        if use_percent_risk:
+            risk_percent_per_trade = st.number_input("Risk % mỗi lệnh", 0.1, 10.0, 0.5, 0.1,
+                                                    help="% balance risk mỗi lệnh (VD: 0.5 = risk 0.5% balance)")
+            lot_size = 0.01  # Ignored when using % risk
+            st.info(f"💡 Lot size sẽ tính động theo {risk_percent_per_trade}% risk")
+        else:
+            lot_size = st.number_input("Fixed Lot Size", 0.01, 10.0, 0.01, 0.01,
+                                      help="Khối lượng cố định mỗi lệnh")
+            risk_percent_per_trade = 0.0  # Disabled
 
     st.markdown("---")
 
@@ -401,7 +422,10 @@ if run_optimization and st.session_state.get('selected_files'):
                     bars_check_swing=bars_check_swing,
                     spread_pips=spread_pips,
                     lot_size=lot_size,
-                    symbol=file_info['symbol']  # Pass symbol to auto-detect JPY pairs
+                    symbol=file_info['symbol'],  # Pass symbol to auto-detect JPY pairs
+                    initial_balance=initial_balance,  # Starting balance
+                    risk_percent_per_trade=risk_percent_per_trade,  # % risk or 0 for fixed lot
+                    max_lot_size=max_lot_size  # Maximum lot allowed
                 )
 
                 # Calculate score
@@ -577,6 +601,49 @@ if st.session_state.optimization_done and st.session_state.all_results is not No
         # Get best result from filtered data
         best_result = filtered_df.sort_values('score', ascending=False).iloc[0]
 
+        # Display Balance Info (Top Row)
+        col_b1, col_b2, col_b3, col_b4 = st.columns(4)
+
+        # Calculate final balance from initial + profit
+        final_balance = initial_balance + best_result['total_profit_currency']
+        profit_percent = (best_result['total_profit_currency'] / initial_balance) * 100 if initial_balance > 0 else 0
+
+        with col_b1:
+            st.metric(
+                "💼 Initial Balance",
+                f"${initial_balance:,.2f}",
+                help="Equity bắt đầu backtest"
+            )
+        with col_b2:
+            st.metric(
+                "💰 Final Balance",
+                f"${final_balance:,.2f}",
+                delta=f"${best_result['total_profit_currency']:+,.2f}",
+                help="Equity cuối cùng sau backtest"
+            )
+        with col_b3:
+            st.metric(
+                "📊 Return (%)",
+                f"{profit_percent:+.2f}%",
+                help="Tỷ suất lợi nhuận (%)"
+            )
+        with col_b4:
+            if use_percent_risk:
+                st.metric(
+                    "🎲 Risk Mode",
+                    f"{risk_percent_per_trade}% Risk",
+                    help="Lot size động theo % risk"
+                )
+            else:
+                st.metric(
+                    "📌 Lot Size",
+                    f"{lot_size:.2f} lot",
+                    help="Fixed lot size"
+                )
+
+        st.markdown("---")
+
+        # Trading Statistics (Second Row)
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
