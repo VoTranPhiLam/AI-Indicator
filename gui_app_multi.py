@@ -228,54 +228,79 @@ with st.sidebar:
     st.markdown("---")
 
     # Indicator Selection
-    st.subheader("📊 Indicator")
-    indicator = st.selectbox("Chọn indicator:", ["RSI"])
+    st.subheader("📊 Chiến Lược")
+    indicator = st.selectbox("Chọn indicator:", ["ICHIMOKU + RSI"])
 
     st.markdown("---")
 
-    # RSI Parameters
-    if indicator == "RSI":
-        st.subheader("🎯 Tham Số RSI")
+    # ICHIMOKU Parameters
+    if indicator == "ICHIMOKU + RSI":
+        st.subheader("🎯 Tham Số ICHIMOKU")
 
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         with col1:
-            rsi_period_min = st.number_input("Period Min", 5, 50, 10, 1)
-            rsi_period_max = st.number_input("Period Max", 5, 50, 20, 1)
+            st.markdown("**Tenkan-sen**")
+            tenkan_min = st.number_input("Tenkan Min", 3, 30, 9, 1)
+            tenkan_max = st.number_input("Tenkan Max", 3, 30, 9, 1)
+            tenkan_step = st.number_input("Tenkan Step", 1, 10, 1, 1)
+
         with col2:
-            rsi_period_step = st.number_input("Period Step", 1, 10, 2, 1)
+            st.markdown("**Kijun-sen**")
+            kijun_min = st.number_input("Kijun Min", 10, 60, 26, 1)
+            kijun_max = st.number_input("Kijun Max", 10, 60, 26, 1)
+            kijun_step = st.number_input("Kijun Step", 1, 10, 1, 1)
 
-        col3, col4 = st.columns(2)
         with col3:
-            overbought_min = st.number_input("OB Min", 60, 90, 70, 5)
-            overbought_max = st.number_input("OB Max", 60, 90, 80, 5)
-        with col4:
-            overbought_step = st.number_input("OB Step", 1, 10, 10, 1)
+            st.markdown("**Senkou Span B**")
+            senkou_min = st.number_input("Senkou Min", 20, 100, 52, 1)
+            senkou_max = st.number_input("Senkou Max", 20, 100, 52, 1)
+            senkou_step = st.number_input("Senkou Step", 1, 10, 1, 1)
 
-        col5, col6 = st.columns(2)
+        st.markdown("---")
+        st.subheader("🔍 Tham Số RSI Filter")
+
+        col4, col5, col6 = st.columns(3)
+        with col4:
+            rsi_period_min = st.number_input("RSI Period Min", 5, 30, 14, 1)
+            rsi_period_max = st.number_input("RSI Period Max", 5, 30, 14, 1)
+            rsi_period_step = st.number_input("RSI Period Step", 1, 10, 1, 1)
+
         with col5:
-            oversold_min = st.number_input("OS Min", 10, 40, 20, 5)
-            oversold_max = st.number_input("OS Max", 10, 40, 30, 5)
+            rsi_buy_min = st.number_input("RSI Buy Min", 30.0, 70.0, 50.0, 5.0)
+            rsi_buy_max = st.number_input("RSI Buy Max", 30.0, 70.0, 50.0, 5.0)
+            rsi_buy_step = st.number_input("RSI Buy Step", 1.0, 10.0, 5.0, 1.0)
+
         with col6:
-            oversold_step = st.number_input("OS Step", 1, 10, 10, 1)
+            rsi_sell_min = st.number_input("RSI Sell Min", 30.0, 70.0, 50.0, 5.0)
+            rsi_sell_max = st.number_input("RSI Sell Max", 30.0, 70.0, 50.0, 5.0)
+            rsi_sell_step = st.number_input("RSI Sell Step", 1.0, 10.0, 5.0, 1.0)
 
         # Calculate total combinations
         total_combos = (
+            len(range(tenkan_min, tenkan_max + 1, tenkan_step)) *
+            len(range(kijun_min, kijun_max + 1, kijun_step)) *
+            len(range(senkou_min, senkou_max + 1, senkou_step)) *
             len(range(rsi_period_min, rsi_period_max + 1, rsi_period_step)) *
-            len(range(overbought_min, overbought_max + 1, overbought_step)) *
-            len(range(oversold_min, oversold_max + 1, oversold_step))
+            len([x / 10 for x in range(int(rsi_buy_min * 10), int(rsi_buy_max * 10) + 1, int(rsi_buy_step * 10))]) *
+            len([x / 10 for x in range(int(rsi_sell_min * 10), int(rsi_sell_max * 10) + 1, int(rsi_sell_step * 10))])
         )
 
-        st.info(f"📊 Tests per file: **{total_combos}**")
+        st.info(f"📊 Tests per file: **{total_combos:,}**")
 
     st.markdown("---")
 
     # Trading Parameters
     st.subheader("💰 Tham Số Trading")
 
-    tp_pips = st.number_input("Take Profit (pips)", 5.0, 100.0, 20.0, 1.0)
-    sl_pips = st.number_input("Stop Loss (pips)", 5.0, 100.0, 15.0, 1.0)
-    spread_pips = st.number_input("Spread (pips)", 0.1, 10.0, 1.2, 0.1)
-    lot_size = st.number_input("Lot Size", 0.01, 10.0, 0.1, 0.01)
+    col7, col8 = st.columns(2)
+    with col7:
+        risk_reward_ratio = st.number_input("Risk:Reward Ratio", 0.5, 5.0, 1.2, 0.1)
+        sl_buffer_pips = st.number_input("SL Buffer (pips)", 0.0, 10.0, 3.0, 0.5)
+    with col8:
+        bars_check_swing = st.number_input("Bars Check Swing", 1, 20, 5, 1)
+        spread_pips = st.number_input("Spread (pips)", 0.1, 10.0, 1.2, 0.1)
+
+    lot_size = st.number_input("Lot Size", 0.01, 10.0, 0.01, 0.01)
 
     st.markdown("---")
 
@@ -315,11 +340,14 @@ if run_optimization and st.session_state.get('selected_files'):
 
     st.header(f"🔄 Đang Tối Ưu Hóa {len(selected_files)} File(s)...")
 
-    # Build parameter grid
+    # Build parameter grid for Ichimoku
     param_grid = {
+        'tenkan_period': list(range(tenkan_min, tenkan_max + 1, tenkan_step)),
+        'kijun_period': list(range(kijun_min, kijun_max + 1, kijun_step)),
+        'senkou_b_period': list(range(senkou_min, senkou_max + 1, senkou_step)),
         'rsi_period': list(range(rsi_period_min, rsi_period_max + 1, rsi_period_step)),
-        'overbought': list(range(overbought_min, overbought_max + 1, overbought_step)),
-        'oversold': list(range(oversold_min, oversold_max + 1, oversold_step))
+        'rsi_buy_threshold': [x / 10 for x in range(int(rsi_buy_min * 10), int(rsi_buy_max * 10) + 1, int(rsi_buy_step * 10))],
+        'rsi_sell_threshold': [x / 10 for x in range(int(rsi_sell_min * 10), int(rsi_sell_max * 10) + 1, int(rsi_sell_step * 10))]
     }
 
     # Generate all combinations
@@ -359,14 +387,18 @@ if run_optimization and st.session_state.get('selected_files'):
                     f"Test {idx+1}/{total_combinations} ({progress*100:.1f}%)"
                 )
 
-                # Run backtest
+                # Run backtest with Ichimoku strategy
                 backtest_result = backtest_strategy(
                     data=data,
+                    tenkan_period=params['tenkan_period'],
+                    kijun_period=params['kijun_period'],
+                    senkou_b_period=params['senkou_b_period'],
                     rsi_period=params['rsi_period'],
-                    overbought=params['overbought'],
-                    oversold=params['oversold'],
-                    tp_pips=tp_pips,
-                    sl_pips=sl_pips,
+                    rsi_buy_threshold=params['rsi_buy_threshold'],
+                    rsi_sell_threshold=params['rsi_sell_threshold'],
+                    risk_reward_ratio=risk_reward_ratio,
+                    sl_buffer_pips=sl_buffer_pips,
+                    bars_check_swing=bars_check_swing,
                     spread_pips=spread_pips,
                     lot_size=lot_size
                 )
@@ -383,9 +415,13 @@ if run_optimization and st.session_state.get('selected_files'):
                     'symbol': file_info['symbol'],
                     'timeframe': file_info['timeframe'],
                     'filename': file_info['filename'],
+                    'tenkan_period': params['tenkan_period'],
+                    'kijun_period': params['kijun_period'],
+                    'senkou_b_period': params['senkou_b_period'],
                     'rsi_period': params['rsi_period'],
-                    'overbought': params['overbought'],
-                    'oversold': params['oversold'],
+                    'rsi_buy_threshold': params['rsi_buy_threshold'],
+                    'rsi_sell_threshold': params['rsi_sell_threshold'],
+                    'risk_reward_ratio': risk_reward_ratio,
                     'total_profit_pips': backtest_result['total_profit_pips'],
                     'num_trades': backtest_result['num_trades'],
                     'win_rate': backtest_result['win_rate'],
@@ -466,7 +502,8 @@ if st.session_state.optimization_done and st.session_state.all_results is not No
 
             with col2:
                 st.markdown("**Tham Số:**")
-                st.write(f"Period: {int(row['rsi_period'])}, OB: {int(row['overbought'])}, OS: {int(row['oversold'])}")
+                st.write(f"Tenkan: {int(row['tenkan_period'])}, Kijun: {int(row['kijun_period'])}, Senkou: {int(row['senkou_b_period'])}")
+                st.write(f"RSI: {int(row['rsi_period'])}, Buy>={row['rsi_buy_threshold']:.0f}, Sell<={row['rsi_sell_threshold']:.0f}")
 
             with col3:
                 st.markdown("**Hiệu Suất:**")

@@ -42,15 +42,21 @@ def load_data(filepath: str, has_header: bool = None) -> pd.DataFrame:
 
     # Read CSV with or without header
     if has_header:
-        df = pd.read_csv(filepath)
+        df = pd.read_csv(filepath, sep=None, engine='python')
         df.columns = df.columns.str.lower()
     else:
         # No header - define column names
+        # Auto-detect separator (tab or comma)
         df = pd.read_csv(
             filepath,
             header=None,
-            names=['date', 'time', 'open', 'high', 'low', 'close', 'volume']
+            names=['date', 'time', 'open', 'high', 'low', 'close', 'volume'],
+            sep=None,
+            engine='python'
         )
+
+    # Drop any NaN columns that may have been added
+    df = df.dropna(axis=1, how='all')
 
     # Combine Date and Time into timestamp
     if 'date' in df.columns and 'time' in df.columns:
@@ -113,37 +119,135 @@ def compute_rsi(close_prices: pd.Series, period: int) -> pd.Series:
     return rsi
 
 
+def compute_ichimoku(
+    high: pd.Series,
+    low: pd.Series,
+    tenkan_period: int = 9,
+    kijun_period: int = 26,
+    senkou_b_period: int = 52
+) -> Tuple[pd.Series, pd.Series, pd.Series, pd.Series, pd.Series]:
+    """
+    Calculate Ichimoku Kinko Hyo indicator.
+
+    Args:
+        high: Series of high prices
+        low: Series of low prices
+        tenkan_period: Tenkan-sen period (default 9)
+        kijun_period: Kijun-sen period (default 26)
+        senkou_b_period: Senkou Span B period (default 52)
+
+    Returns:
+        Tuple of (tenkan_sen, kijun_sen, senkou_span_a, senkou_span_b, chikou_span)
+    """
+    # Tenkan-sen (Conversion Line): (highest high + lowest low) / 2 for tenkan_period
+    tenkan_sen = (high.rolling(window=tenkan_period).max() +
+                  low.rolling(window=tenkan_period).min()) / 2
+
+    # Kijun-sen (Base Line): (highest high + lowest low) / 2 for kijun_period
+    kijun_sen = (high.rolling(window=kijun_period).max() +
+                 low.rolling(window=kijun_period).min()) / 2
+
+    # Senkou Span A (Leading Span A): (Tenkan-sen + Kijun-sen) / 2, shifted forward
+    senkou_span_a = ((tenkan_sen + kijun_sen) / 2).shift(kijun_period)
+
+    # Senkou Span B (Leading Span B): (highest high + lowest low) / 2 for senkou_b_period, shifted forward
+    senkou_span_b = ((high.rolling(window=senkou_b_period).max() +
+                      low.rolling(window=senkou_b_period).min()) / 2).shift(kijun_period)
+
+    # Chikou Span (Lagging Span): Close shifted backward
+    chikou_span = pd.Series(index=high.index, dtype=float)  # Not used in this strategy
+
+    return tenkan_sen, kijun_sen, senkou_span_a, senkou_span_b, chikou_span
+
+
+def find_swing_low(low: pd.Series, current_index: int, bars_to_check: int = 5) -> float:
+    """
+    Find the lowest low in recent candles (swing low for SL calculation).
+
+    Args:
+        low: Series of low prices
+        current_index: Current candle index
+        bars_to_check: Number of bars to check for swing low
+
+    Returns:
+        Swing low price
+    """
+    if current_index < 1:
+        return low.iloc[current_index] if current_index >= 0 else 0.0
+
+    start_idx = max(1, current_index - bars_to_check + 1)
+    end_idx = current_index + 1
+
+    # Find the lowest low in the range
+    swing_low = low.iloc[start_idx:end_idx].min()
+
+    return swing_low
+
+
+def find_swing_high(high: pd.Series, current_index: int, bars_to_check: int = 5) -> float:
+    """
+    Find the highest high in recent candles (swing high for SL calculation).
+
+    Args:
+        high: Series of high prices
+        current_index: Current candle index
+        bars_to_check: Number of bars to check for swing high
+
+    Returns:
+        Swing high price
+    """
+    if current_index < 1:
+        return high.iloc[current_index] if current_index >= 0 else 0.0
+
+    start_idx = max(1, current_index - bars_to_check + 1)
+    end_idx = current_index + 1
+
+    # Find the highest high in the range
+    swing_high = high.iloc[start_idx:end_idx].max()
+
+    return swing_high
+
+
 # ============================================================================
 # BACKTESTING ENGINE
 # ============================================================================
 
 def backtest_strategy(
     data: pd.DataFrame,
-    rsi_period: int,
-    overbought: float,
-    oversold: float,
-    tp_pips: float,
-    sl_pips: float,
-    spread_pips: float,
-    lot_size: float,
+    tenkan_period: int = 9,
+    kijun_period: int = 26,
+    senkou_b_period: int = 52,
+    rsi_period: int = 14,
+    rsi_buy_threshold: float = 50.0,
+    rsi_sell_threshold: float = 50.0,
+    risk_reward_ratio: float = 1.2,
+    sl_buffer_pips: float = 3.0,
+    bars_check_swing: int = 5,
+    spread_pips: float = 1.2,
+    lot_size: float = 0.01,
     pip_value: float = 0.0001
 ) -> Dict:
     """
-    Backtest RSI strategy on given data.
+    Backtest Ichimoku + RSI Filter strategy on given data.
 
-    Trading Rules:
-    - BUY when RSI < oversold
-    - SELL when RSI > overbought
+    Trading Rules (Based on EA_ICHIMOKU_MT4.mq4):
+    - BUY when: Tenkan crosses ABOVE Kijun AND RSI >= rsi_buy_threshold
+    - SELL when: Tenkan crosses BELOW Kijun AND RSI <= rsi_sell_threshold
+    - SL: Swing Low/High + buffer
+    - TP: Risk:Reward ratio (default 1:1.2)
     - One position at a time
-    - Exit on TP or SL
 
     Args:
         data: DataFrame with OHLCV data
-        rsi_period: RSI calculation period
-        overbought: RSI overbought threshold
-        oversold: RSI oversold threshold
-        tp_pips: Take profit in pips
-        sl_pips: Stop loss in pips
+        tenkan_period: Tenkan-sen period (default 9)
+        kijun_period: Kijun-sen period (default 26)
+        senkou_b_period: Senkou Span B period (default 52)
+        rsi_period: RSI period for trend filter (default 14)
+        rsi_buy_threshold: RSI must be >= this for BUY (default 50)
+        rsi_sell_threshold: RSI must be <= this for SELL (default 50)
+        risk_reward_ratio: TP/SL ratio (default 1.2)
+        sl_buffer_pips: Buffer distance from swing high/low (default 3.0 pips)
+        bars_check_swing: Number of bars to check for swing high/low (default 5)
         spread_pips: Spread in pips
         lot_size: Position size
         pip_value: Value of 1 pip (default 0.0001 for most pairs)
@@ -151,14 +255,19 @@ def backtest_strategy(
     Returns:
         Dictionary with backtest results
     """
-    # Calculate RSI
+    # Calculate Ichimoku
     data = data.copy()
+    data['tenkan'], data['kijun'], data['senkou_a'], data['senkou_b'], data['chikou'] = compute_ichimoku(
+        data['high'], data['low'], tenkan_period, kijun_period, senkou_b_period
+    )
+
+    # Calculate RSI for trend filter
     data['rsi'] = compute_rsi(data['close'], rsi_period)
 
-    # Drop NaN values from RSI calculation
+    # Drop NaN values from indicator calculations
     data = data.dropna().reset_index(drop=True)
 
-    if len(data) < rsi_period + 10:
+    if len(data) < max(tenkan_period, kijun_period, senkou_b_period, rsi_period) + 10:
         # Not enough data for meaningful backtest
         return {
             'trades': [],
@@ -175,20 +284,28 @@ def backtest_strategy(
     # Initialize trading state
     position = None  # None, 'long', or 'short'
     entry_price = 0.0
+    stop_loss = 0.0
+    take_profit = 0.0
     entry_index = 0
     trades = []
     equity = 1000.0  # Starting equity in currency units
     equity_curve = [equity]
 
-    # Convert pips to price
-    tp_price_offset = tp_pips * pip_value
-    sl_price_offset = sl_pips * pip_value
+    # Convert spread to price
     spread_price = spread_pips * pip_value
+    sl_buffer = sl_buffer_pips * pip_value
 
     # Simulate trading candle by candle
-    for i in range(len(data)):
+    for i in range(1, len(data)):  # Start from 1 to check previous candle
         current_candle = data.iloc[i]
-        rsi_value = current_candle['rsi']
+        prev_candle = data.iloc[i - 1]
+
+        # Get current indicator values
+        tenkan_current = current_candle['tenkan']
+        kijun_current = current_candle['kijun']
+        tenkan_prev = prev_candle['tenkan']
+        kijun_prev = prev_candle['kijun']
+        rsi_current = current_candle['rsi']
 
         # Check if we have an open position
         if position is not None:
@@ -199,31 +316,24 @@ def backtest_strategy(
 
             if position == 'long':
                 # Check TP/SL for long position
-                # During the candle, check if high reached TP or low reached SL
-                tp_level = entry_price + tp_price_offset
-                sl_level = entry_price - sl_price_offset
-
-                if current_candle['high'] >= tp_level:
+                if current_candle['high'] >= take_profit:
                     exit_triggered = True
-                    exit_price = tp_level
+                    exit_price = take_profit
                     exit_reason = 'TP'
-                elif current_candle['low'] <= sl_level:
+                elif current_candle['low'] <= stop_loss:
                     exit_triggered = True
-                    exit_price = sl_level
+                    exit_price = stop_loss
                     exit_reason = 'SL'
 
             elif position == 'short':
                 # Check TP/SL for short position
-                tp_level = entry_price - tp_price_offset
-                sl_level = entry_price + sl_price_offset
-
-                if current_candle['low'] <= tp_level:
+                if current_candle['low'] <= take_profit:
                     exit_triggered = True
-                    exit_price = tp_level
+                    exit_price = take_profit
                     exit_reason = 'TP'
-                elif current_candle['high'] >= sl_level:
+                elif current_candle['high'] >= stop_loss:
                     exit_triggered = True
-                    exit_price = sl_level
+                    exit_price = stop_loss
                     exit_reason = 'SL'
 
             if exit_triggered:
@@ -252,6 +362,8 @@ def backtest_strategy(
                     'type': position,
                     'entry_price': entry_price,
                     'exit_price': exit_price,
+                    'stop_loss': stop_loss,
+                    'take_profit': take_profit,
                     'profit_pips': profit_pips,
                     'profit_currency': profit_currency,
                     'exit_reason': exit_reason
@@ -261,20 +373,39 @@ def backtest_strategy(
                 position = None
 
         # Check for entry signals (only if no position)
-        if position is None and not math.isnan(rsi_value):
-            # BUY signal: RSI < oversold
-            if rsi_value < oversold:
+        if position is None and not math.isnan(tenkan_current) and not math.isnan(kijun_current) and not math.isnan(rsi_current):
+
+            # BUY SIGNAL: Tenkan crosses ABOVE Kijun AND RSI >= threshold
+            if tenkan_current > kijun_current and tenkan_prev <= kijun_prev and rsi_current >= rsi_buy_threshold:
                 position = 'long'
-                # Entry price is next candle's open (no look-ahead)
-                # But for simplicity, use current close + spread
+
+                # Entry price: Ask price (close + spread)
                 entry_price = current_candle['close'] + spread_price
                 entry_index = i
 
-            # SELL signal: RSI > overbought
-            elif rsi_value > overbought:
+                # Calculate SL: Swing Low - buffer
+                swing_low = find_swing_low(data['low'], i, bars_check_swing)
+                stop_loss = swing_low - sl_buffer
+
+                # Calculate TP: Entry + (Risk * RR_Ratio)
+                sl_distance = entry_price - stop_loss
+                take_profit = entry_price + (sl_distance * risk_reward_ratio)
+
+            # SELL SIGNAL: Tenkan crosses BELOW Kijun AND RSI <= threshold
+            elif tenkan_current < kijun_current and tenkan_prev >= kijun_prev and rsi_current <= rsi_sell_threshold:
                 position = 'short'
+
+                # Entry price: Bid price (close - spread)
                 entry_price = current_candle['close'] - spread_price
                 entry_index = i
+
+                # Calculate SL: Swing High + buffer
+                swing_high = find_swing_high(data['high'], i, bars_check_swing)
+                stop_loss = swing_high + sl_buffer
+
+                # Calculate TP: Entry - (Risk * RR_Ratio)
+                sl_distance = stop_loss - entry_price
+                take_profit = entry_price - (sl_distance * risk_reward_ratio)
 
     # Close any remaining open position at the last candle
     if position is not None:
