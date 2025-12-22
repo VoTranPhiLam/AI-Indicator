@@ -496,6 +496,12 @@ def evaluate_metrics(trades: List[Dict], equity_curve: List[float]) -> Dict:
             'total_profit_pips': 0.0,
             'total_profit_currency': 0.0,
             'num_trades': 0,
+            'num_winning_trades': 0,
+            'num_losing_trades': 0,
+            'total_winning_profit_pips': 0.0,
+            'total_losing_profit_pips': 0.0,
+            'total_winning_profit_currency': 0.0,
+            'total_losing_profit_currency': 0.0,
             'win_rate': 0.0,
             'profit_factor': 0.0,
             'max_drawdown': 0.0,
@@ -509,14 +515,23 @@ def evaluate_metrics(trades: List[Dict], equity_curve: List[float]) -> Dict:
     # Number of trades
     num_trades = len(trades)
 
-    # Win rate
+    # Win rate and winning/losing trades statistics
     winning_trades = [t for t in trades if t['profit_pips'] > 0]
-    win_rate = len(winning_trades) / num_trades if num_trades > 0 else 0.0
+    losing_trades = [t for t in trades if t['profit_pips'] < 0]
 
-    # Profit factor
-    gross_profit = sum(t['profit_pips'] for t in trades if t['profit_pips'] > 0)
-    gross_loss = abs(sum(t['profit_pips'] for t in trades if t['profit_pips'] < 0))
-    profit_factor = gross_profit / gross_loss if gross_loss > 0 else (gross_profit if gross_profit > 0 else 0.0)
+    num_winning_trades = len(winning_trades)
+    num_losing_trades = len(losing_trades)
+
+    win_rate = num_winning_trades / num_trades if num_trades > 0 else 0.0
+
+    # Profit factor and profit/loss breakdown
+    gross_profit_pips = sum(t['profit_pips'] for t in trades if t['profit_pips'] > 0)
+    gross_loss_pips = sum(t['profit_pips'] for t in trades if t['profit_pips'] < 0)  # Keep negative
+
+    gross_profit_currency = sum(t['profit_currency'] for t in trades if t['profit_currency'] > 0)
+    gross_loss_currency = sum(t['profit_currency'] for t in trades if t['profit_currency'] < 0)  # Keep negative
+
+    profit_factor = gross_profit_pips / abs(gross_loss_pips) if gross_loss_pips < 0 else (gross_profit_pips if gross_profit_pips > 0 else 0.0)
 
     # Maximum drawdown
     if len(equity_curve) > 1:
@@ -541,6 +556,12 @@ def evaluate_metrics(trades: List[Dict], equity_curve: List[float]) -> Dict:
         'total_profit_pips': total_profit_pips,
         'total_profit_currency': total_profit_currency,
         'num_trades': num_trades,
+        'num_winning_trades': num_winning_trades,
+        'num_losing_trades': num_losing_trades,
+        'total_winning_profit_pips': gross_profit_pips,
+        'total_losing_profit_pips': gross_loss_pips,
+        'total_winning_profit_currency': gross_profit_currency,
+        'total_losing_profit_currency': gross_loss_currency,
         'win_rate': win_rate * 100,  # Convert to percentage
         'profit_factor': profit_factor,
         'max_drawdown': max_drawdown,

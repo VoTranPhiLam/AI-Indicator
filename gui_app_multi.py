@@ -562,6 +562,68 @@ if st.session_state.optimization_done and st.session_state.all_results is not No
         if len(filtered_df) == 0:
             st.info("💡 Không có kết quả hợp lệ. Tick 'Hiển thị TẤT CẢ' để xem tất cả kết quả (bao gồm invalid).")
 
+    # Display summary statistics
+    if len(filtered_df) > 0:
+        st.markdown("---")
+        st.subheader("📊 Thống Kê Tổng Hợp")
+
+        # Get best result from filtered data
+        best_result = filtered_df.sort_values('score', ascending=False).iloc[0]
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.metric(
+                "🎯 Tổng Lệnh",
+                f"{int(best_result['num_trades'])}",
+                help="Tổng số lệnh giao dịch"
+            )
+            st.metric(
+                "✅ Lệnh Lời",
+                f"{int(best_result['num_winning_trades'])}",
+                help="Số lệnh có profit > 0"
+            )
+
+        with col2:
+            st.metric(
+                "❌ Lệnh Lỗ",
+                f"{int(best_result['num_losing_trades'])}",
+                help="Số lệnh có profit < 0"
+            )
+            st.metric(
+                "📈 Win Rate",
+                f"{best_result['win_rate']:.1f}%",
+                help="Tỷ lệ thắng"
+            )
+
+        with col3:
+            st.metric(
+                "💰 Profit Lời (pips)",
+                f"+{best_result['total_winning_profit_pips']:.1f}",
+                help="Tổng profit của các lệnh lời"
+            )
+            st.metric(
+                "💸 Profit Lỗ (pips)",
+                f"{best_result['total_losing_profit_pips']:.1f}",
+                help="Tổng profit của các lệnh lỗ"
+            )
+
+        with col4:
+            st.metric(
+                "💵 Profit Cuối (pips)",
+                f"{best_result['total_profit_pips']:.1f}",
+                help="Profit cuối cùng (Lời + Lỗ)",
+                delta=f"{best_result['total_profit_pips']:.1f}"
+            )
+            st.metric(
+                "💲 Profit Cuối ($)",
+                f"${best_result['total_profit_currency']:.2f}",
+                help="Profit cuối cùng theo USD"
+            )
+
+        st.info(f"📌 Thống kê của bộ tham số tốt nhất: **{best_result['symbol']} {best_result['timeframe']}** (Score: {best_result['score']:.2f})")
+        st.markdown("---")
+
     # Display
     display_df = filtered_df.copy()
     display_df = display_df.sort_values('score', ascending=False).head(100)
@@ -571,7 +633,9 @@ if st.session_state.optimization_done and st.session_state.all_results is not No
             'symbol', 'timeframe',
             'tenkan_period', 'kijun_period', 'senkou_b_period',
             'rsi_period', 'rsi_buy_threshold', 'rsi_sell_threshold',
-            'total_profit_pips', 'win_rate', 'num_trades',
+            'num_trades', 'num_winning_trades', 'num_losing_trades',
+            'total_profit_pips', 'total_winning_profit_pips', 'total_losing_profit_pips',
+            'total_profit_currency', 'win_rate',
             'max_drawdown_pct', 'score', 'valid'
         ]],
         use_container_width=True,
@@ -619,7 +683,8 @@ if st.session_state.optimization_done and st.session_state.all_results is not No
                 y='total_profit_pips',
                 color='symbol',
                 size='score',
-                hover_data=['timeframe', 'tenkan_period', 'kijun_period', 'rsi_period', 'rsi_buy_threshold'],
+                hover_data=['timeframe', 'num_trades', 'num_winning_trades', 'num_losing_trades',
+                           'total_winning_profit_pips', 'total_losing_profit_pips', 'total_profit_currency'],
                 title="Win Rate vs Profit (Size = Score)",
                 labels={'win_rate': 'Win Rate (%)', 'total_profit_pips': 'Profit (pips)'}
             )
