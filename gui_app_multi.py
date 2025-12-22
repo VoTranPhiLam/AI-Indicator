@@ -411,7 +411,7 @@ if run_optimization and st.session_state.get('selected_files'):
                     backtest_result['max_drawdown_pct'] < max_dd_threshold
                 )
 
-                # Store result with file info
+                # Store result with file info (with safe key access)
                 result = {
                     'symbol': file_info['symbol'],
                     'timeframe': file_info['timeframe'],
@@ -423,18 +423,18 @@ if run_optimization and st.session_state.get('selected_files'):
                     'rsi_buy_threshold': params['rsi_buy_threshold'],
                     'rsi_sell_threshold': params['rsi_sell_threshold'],
                     'risk_reward_ratio': risk_reward_ratio,
-                    'total_profit_pips': backtest_result['total_profit_pips'],
-                    'total_profit_currency': backtest_result['total_profit_currency'],
-                    'num_trades': backtest_result['num_trades'],
-                    'num_winning_trades': backtest_result['num_winning_trades'],
-                    'num_losing_trades': backtest_result['num_losing_trades'],
-                    'total_winning_profit_pips': backtest_result['total_winning_profit_pips'],
-                    'total_losing_profit_pips': backtest_result['total_losing_profit_pips'],
-                    'total_winning_profit_currency': backtest_result['total_winning_profit_currency'],
-                    'total_losing_profit_currency': backtest_result['total_losing_profit_currency'],
-                    'win_rate': backtest_result['win_rate'],
-                    'profit_factor': backtest_result['profit_factor'],
-                    'max_drawdown_pct': backtest_result['max_drawdown_pct'],
+                    'total_profit_pips': backtest_result.get('total_profit_pips', 0.0),
+                    'total_profit_currency': backtest_result.get('total_profit_currency', 0.0),
+                    'num_trades': backtest_result.get('num_trades', 0),
+                    'num_winning_trades': backtest_result.get('num_winning_trades', 0),
+                    'num_losing_trades': backtest_result.get('num_losing_trades', 0),
+                    'total_winning_profit_pips': backtest_result.get('total_winning_profit_pips', 0.0),
+                    'total_losing_profit_pips': backtest_result.get('total_losing_profit_pips', 0.0),
+                    'total_winning_profit_currency': backtest_result.get('total_winning_profit_currency', 0.0),
+                    'total_losing_profit_currency': backtest_result.get('total_losing_profit_currency', 0.0),
+                    'win_rate': backtest_result.get('win_rate', 0.0),
+                    'profit_factor': backtest_result.get('profit_factor', 0.0),
+                    'max_drawdown_pct': backtest_result.get('max_drawdown_pct', 0.0),
                     'score': score,
                     'valid': valid
                 }
@@ -684,15 +684,19 @@ if st.session_state.optimization_done and st.session_state.all_results is not No
 
         with tab3:
             # Score comparison scatter
+            # Create absolute score for size (must be positive)
+            valid_results_copy = valid_results.copy()
+            valid_results_copy['abs_score'] = valid_results_copy['score'].abs()
+
             fig = px.scatter(
-                valid_results,
+                valid_results_copy,
                 x='win_rate',
                 y='total_profit_pips',
                 color='symbol',
-                size='score',
-                hover_data=['timeframe', 'num_trades', 'num_winning_trades', 'num_losing_trades',
+                size='abs_score',
+                hover_data=['timeframe', 'score', 'num_trades', 'num_winning_trades', 'num_losing_trades',
                            'total_winning_profit_pips', 'total_losing_profit_pips', 'total_profit_currency'],
-                title="Win Rate vs Profit (Size = Score)",
+                title="Win Rate vs Profit (Size = |Score|)",
                 labels={'win_rate': 'Win Rate (%)', 'total_profit_pips': 'Profit (pips)'}
             )
             st.plotly_chart(fig, use_container_width=True)
