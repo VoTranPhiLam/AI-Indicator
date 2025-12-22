@@ -465,7 +465,7 @@ if st.session_state.optimization_done and st.session_state.all_results is not No
     # Overall Statistics
     st.subheader("📈 Thống Kê Tổng Quan")
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
         st.metric("Tổng Tests", f"{len(all_results_df):,}")
@@ -473,11 +473,24 @@ if st.session_state.optimization_done and st.session_state.all_results is not No
         valid_count = len(all_results_df[all_results_df['valid'] == True])
         st.metric("Kết Quả Hợp Lệ", f"{valid_count:,}", delta=f"{valid_count/len(all_results_df)*100:.1f}%")
     with col3:
+        # Count results with 0 trades
+        zero_trades = len(all_results_df[all_results_df['num_trades'] == 0])
+        st.metric("Không Có Trade", f"{zero_trades:,}", delta=f"{zero_trades/len(all_results_df)*100:.1f}%")
+    with col4:
         unique_symbols = all_results_df['symbol'].nunique()
         st.metric("Số Sản Phẩm", unique_symbols)
-    with col4:
+    with col5:
         unique_files = all_results_df['filename'].nunique()
         st.metric("Số Files", unique_files)
+
+    # Warning if most results have no trades
+    if zero_trades > len(all_results_df) * 0.8:
+        st.warning(f"⚠️ **{zero_trades/len(all_results_df)*100:.0f}% kết quả không có trade nào!**\n\n"
+                   "Nguyên nhân: Ichimoku crossover rất hiếm với dữ liệu ngắn.\n\n"
+                   "**Giải pháp:**\n"
+                   "1. Sử dụng dữ liệu DÀI HƠN (>6 tháng)\n"
+                   "2. Giảm Kijun/Senkou periods để tín hiệu nhạy hơn\n"
+                   "3. Hoặc test trên khung thời gian LỚN HƠN (H1, H4, D1)")
 
     st.markdown("---")
 
@@ -517,7 +530,7 @@ if st.session_state.optimization_done and st.session_state.all_results is not No
     st.subheader("📋 Bảng Kết Quả Chi Tiết")
 
     # Filters
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
 
     with col1:
         filter_symbol = st.multiselect(
@@ -533,11 +546,20 @@ if st.session_state.optimization_done and st.session_state.all_results is not No
             default=sorted(all_results_df['timeframe'].unique())
         )
 
+    with col3:
+        show_all = st.checkbox("Hiển thị TẤT CẢ (bao gồm invalid)", value=False)
+
     # Apply filters
     filtered_df = all_results_df[
         (all_results_df['symbol'].isin(filter_symbol)) &
         (all_results_df['timeframe'].isin(filter_timeframe))
     ]
+
+    # Filter by valid status if needed
+    if not show_all:
+        filtered_df = filtered_df[filtered_df['valid'] == True]
+        if len(filtered_df) == 0:
+            st.info("💡 Không có kết quả hợp lệ. Tick 'Hiển thị TẤT CẢ' để xem tất cả kết quả (bao gồm invalid).")
 
     # Display
     display_df = filtered_df.copy()
@@ -559,46 +581,50 @@ if st.session_state.optimization_done and st.session_state.all_results is not No
     st.markdown("---")
     st.subheader("📊 Biểu Đồ Phân Tích")
 
-    tab1, tab2, tab3 = st.tabs(["📊 By Symbol/Timeframe", "💰 Profit Distribution", "📈 Score Comparison"])
+    # Only show charts if there are valid results
+    if len(valid_results) > 0:
+        tab1, tab2, tab3 = st.tabs(["📊 By Symbol/Timeframe", "💰 Profit Distribution", "📈 Score Comparison"])
 
-    with tab1:
-        # Best score by symbol and timeframe
-        fig = px.bar(
-            best_per_file,
-            x='symbol',
-            y='score',
-            color='timeframe',
-            barmode='group',
-            title="Best Score by Symbol and Timeframe",
-            labels={'score': 'Score', 'symbol': 'Symbol', 'timeframe': 'Timeframe'}
-        )
-        st.plotly_chart(fig, use_container_width=True)
+        with tab1:
+            # Best score by symbol and timeframe
+            fig = px.bar(
+                best_per_file,
+                x='symbol',
+                y='score',
+                color='timeframe',
+                barmode='group',
+                title="Best Score by Symbol and Timeframe",
+                labels={'score': 'Score', 'symbol': 'Symbol', 'timeframe': 'Timeframe'}
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
-    with tab2:
-        # Profit distribution
-        fig = px.box(
-            valid_results,
-            x='symbol',
-            y='total_profit_pips',
-            color='timeframe',
-            title="Profit Distribution by Symbol and Timeframe",
-            labels={'total_profit_pips': 'Profit (pips)', 'symbol': 'Symbol'}
-        )
-        st.plotly_chart(fig, use_container_width=True)
+        with tab2:
+            # Profit distribution
+            fig = px.box(
+                valid_results,
+                x='symbol',
+                y='total_profit_pips',
+                color='timeframe',
+                title="Profit Distribution by Symbol and Timeframe",
+                labels={'total_profit_pips': 'Profit (pips)', 'symbol': 'Symbol'}
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
-    with tab3:
-        # Score comparison scatter
-        fig = px.scatter(
-            valid_results,
-            x='win_rate',
-            y='total_profit_pips',
-            color='symbol',
-            size='score',
-            hover_data=['timeframe', 'tenkan_period', 'kijun_period', 'rsi_period', 'rsi_buy_threshold'],
-            title="Win Rate vs Profit (Size = Score)",
-            labels={'win_rate': 'Win Rate (%)', 'total_profit_pips': 'Profit (pips)'}
-        )
-        st.plotly_chart(fig, use_container_width=True)
+        with tab3:
+            # Score comparison scatter
+            fig = px.scatter(
+                valid_results,
+                x='win_rate',
+                y='total_profit_pips',
+                color='symbol',
+                size='score',
+                hover_data=['timeframe', 'tenkan_period', 'kijun_period', 'rsi_period', 'rsi_buy_threshold'],
+                title="Win Rate vs Profit (Size = Score)",
+                labels={'win_rate': 'Win Rate (%)', 'total_profit_pips': 'Profit (pips)'}
+            )
+            st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("💡 Không có kết quả hợp lệ để hiển thị biểu đồ. Thử giảm Max DD Threshold hoặc điều chỉnh parameters.")
 
     # Download
     st.markdown("---")
