@@ -430,6 +430,8 @@ def backtest_strategy(
             'type': position,
             'entry_price': entry_price,
             'exit_price': exit_price,
+            'stop_loss': stop_loss,
+            'take_profit': take_profit,
             'profit_pips': profit_pips,
             'profit_currency': profit_currency,
             'exit_reason': 'EOD'
