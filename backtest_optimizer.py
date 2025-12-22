@@ -234,6 +234,74 @@ def find_swing_high(high: pd.Series, current_index: int, bars_to_check: int = 5)
     return swing_high
 
 
+def calculate_lot_size(
+    entry_price: float,
+    stop_loss: float,
+    risk_percent: float,
+    current_balance: float,
+    pip_value: float,
+    max_lot: float,
+    min_lot: float = 0.01
+) -> float:
+    """
+    Calculate lot size based on risk percentage.
+
+    Formula from EA_ICHIMOKU_MT4.mq4:
+    1. risk_amount = risk_percent * balance / 100
+    2. sl_distance_pips = |entry - sl| / pip_value
+    3. pip_value_per_lot = $10 for standard pairs, $1000 for JPY pairs (per 1.0 lot)
+    4. lot_size = risk_amount / (sl_distance_pips * pip_value_per_lot)
+
+    Args:
+        entry_price: Entry price
+        stop_loss: Stop loss price
+        risk_percent: Risk percentage per trade (e.g., 0.5 for 0.5%)
+        current_balance: Current account balance
+        pip_value: Pip value for the symbol (0.0001 or 0.01)
+        max_lot: Maximum allowed lot size
+        min_lot: Minimum allowed lot size (default 0.01)
+
+    Returns:
+        Lot size (capped between min_lot and max_lot)
+    """
+    if risk_percent <= 0:
+        return min_lot
+
+    # Calculate risk amount in currency
+    risk_amount = (risk_percent / 100.0) * current_balance
+
+    # Calculate SL distance in pips
+    sl_distance = abs(entry_price - stop_loss)
+    sl_distance_pips = sl_distance / pip_value
+
+    if sl_distance_pips == 0:
+        return min_lot
+
+    # Pip value per 1.0 lot (standard lot)
+    # For standard pairs (EURUSD, GBPUSD, etc.): 1 pip = $10 per lot
+    # For JPY pairs (USDJPY, EURJPY, etc.): 1 pip = $1000 per lot (approximately)
+    if pip_value == 0.01:  # JPY pair
+        pip_value_per_lot = 1000.0
+    else:  # Standard pair
+        pip_value_per_lot = 10.0
+
+    # Calculate lot size
+    # Formula: lot_size = risk_amount / (sl_distance_pips * pip_value_per_lot)
+    # Example: $50 / (40 pips * $10) = $50 / $400 = 0.125 lot
+    lot_size = risk_amount / (sl_distance_pips * pip_value_per_lot)
+
+    # Cap between min and max
+    if lot_size < min_lot:
+        lot_size = min_lot
+    elif lot_size > max_lot:
+        lot_size = max_lot
+
+    # Round to 2 decimal places
+    lot_size = round(lot_size, 2)
+
+    return lot_size
+
+
 # ============================================================================
 # BACKTESTING ENGINE
 # ============================================================================
@@ -251,7 +319,10 @@ def backtest_strategy(
     bars_check_swing: int = 5,
     spread_pips: float = 1.2,
     lot_size: float = 0.01,
-    symbol: str = "EURUSD"  # Used to detect JPY pairs for pip_value
+    symbol: str = "EURUSD",  # Used to detect JPY pairs for pip_value
+    initial_balance: float = 10000.0,  # Starting balance for % risk calculation
+    risk_percent_per_trade: float = 0.0,  # Risk % per trade (0 = use fixed lot_size)
+    max_lot_size: float = 100.0  # Maximum lot size allowed
 ) -> Dict:
     """
     Backtest Ichimoku + RSI Filter strategy on given data.
@@ -262,6 +333,7 @@ def backtest_strategy(
     - SL: Swing Low/High + buffer
     - TP: Risk:Reward ratio (default 1:1.2)
     - One position at a time
+    - Lot sizing: Fixed or % risk based
 
     Args:
         data: DataFrame with OHLCV data
@@ -301,10 +373,16 @@ def backtest_strategy(
         # Not enough data for meaningful backtest
         return {
             'trades': [],
-            'equity_curve': [1000.0],  # Starting equity
+            'equity_curve': [initial_balance],  # Starting equity
             'total_profit_pips': 0.0,
             'total_profit_currency': 0.0,
             'num_trades': 0,
+            'num_winning_trades': 0,
+            'num_losing_trades': 0,
+            'total_winning_profit_pips': 0.0,
+            'total_losing_profit_pips': 0.0,
+            'total_winning_profit_currency': 0.0,
+            'total_losing_profit_currency': 0.0,
             'win_rate': 0.0,
             'profit_factor': 0.0,
             'max_drawdown': 0.0,
@@ -317,8 +395,10 @@ def backtest_strategy(
     stop_loss = 0.0
     take_profit = 0.0
     entry_index = 0
+    current_lot_size = lot_size  # Will be recalculated per trade if using % risk
     trades = []
-    equity = 1000.0  # Starting equity in currency units
+    balance = initial_balance  # Starting balance for % risk calculation
+    equity = initial_balance  # Starting equity in currency units
     equity_curve = [equity]
 
     # Convert spread to price
@@ -377,10 +457,11 @@ def backtest_strategy(
                 profit_pips -= spread_pips
 
                 # Convert to currency
-                profit_currency = profit_pips * pip_value * lot_size * 100000  # 100k per lot
+                profit_currency = profit_pips * pip_value * current_lot_size * 100000  # 100k per lot
 
-                # Update equity
+                # Update equity and balance
                 equity += profit_currency
+                balance += profit_currency  # Update balance for next % risk calculation
                 equity_curve.append(equity)
 
                 # Record trade
@@ -421,6 +502,15 @@ def backtest_strategy(
                 sl_distance = entry_price - stop_loss
                 take_profit = entry_price + (sl_distance * risk_reward_ratio)
 
+                # Calculate lot size based on % risk (if enabled)
+                if risk_percent_per_trade > 0:
+                    current_lot_size = calculate_lot_size(
+                        entry_price, stop_loss, risk_percent_per_trade,
+                        balance, pip_value, max_lot_size
+                    )
+                else:
+                    current_lot_size = lot_size
+
             # SELL SIGNAL: Tenkan crosses BELOW Kijun AND RSI <= threshold
             elif tenkan_current < kijun_current and tenkan_prev >= kijun_prev and rsi_current <= rsi_sell_threshold:
                 position = 'short'
@@ -437,6 +527,15 @@ def backtest_strategy(
                 sl_distance = stop_loss - entry_price
                 take_profit = entry_price - (sl_distance * risk_reward_ratio)
 
+                # Calculate lot size based on % risk (if enabled)
+                if risk_percent_per_trade > 0:
+                    current_lot_size = calculate_lot_size(
+                        entry_price, stop_loss, risk_percent_per_trade,
+                        balance, pip_value, max_lot_size
+                    )
+                else:
+                    current_lot_size = lot_size
+
     # Close any remaining open position at the last candle
     if position is not None:
         current_candle = data.iloc[-1]
@@ -447,8 +546,9 @@ def backtest_strategy(
         else:
             profit_pips = (entry_price - exit_price) / pip_value - spread_pips
 
-        profit_currency = profit_pips * pip_value * lot_size * 100000
+        profit_currency = profit_pips * pip_value * current_lot_size * 100000
         equity += profit_currency
+        balance += profit_currency  # Update balance
         equity_curve.append(equity)
 
         trades.append({
