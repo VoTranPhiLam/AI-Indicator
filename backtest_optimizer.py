@@ -147,15 +147,15 @@ def compute_ichimoku(
     kijun_sen = (high.rolling(window=kijun_period).max() +
                  low.rolling(window=kijun_period).min()) / 2
 
-    # Senkou Span A (Leading Span A): (Tenkan-sen + Kijun-sen) / 2, shifted forward
-    senkou_span_a = ((tenkan_sen + kijun_sen) / 2).shift(kijun_period)
+    # Senkou Span A and B are NOT used for entry signals in EA_ICHIMOKU_MT4.mq4
+    # They are only for cloud visualization
+    # We keep them for completeness but don't shift to avoid NaN issues
+    senkou_span_a = (tenkan_sen + kijun_sen) / 2
+    senkou_span_b = (high.rolling(window=senkou_b_period).max() +
+                     low.rolling(window=senkou_b_period).min()) / 2
 
-    # Senkou Span B (Leading Span B): (highest high + lowest low) / 2 for senkou_b_period, shifted forward
-    senkou_span_b = ((high.rolling(window=senkou_b_period).max() +
-                      low.rolling(window=senkou_b_period).min()) / 2).shift(kijun_period)
-
-    # Chikou Span (Lagging Span): Close shifted backward
-    chikou_span = pd.Series(index=high.index, dtype=float)  # Not used in this strategy
+    # Chikou Span (Lagging Span): Not used in this strategy
+    chikou_span = pd.Series(index=high.index, dtype=float)
 
     return tenkan_sen, kijun_sen, senkou_span_a, senkou_span_b, chikou_span
 
@@ -264,8 +264,9 @@ def backtest_strategy(
     # Calculate RSI for trend filter
     data['rsi'] = compute_rsi(data['close'], rsi_period)
 
-    # Drop NaN values from indicator calculations
-    data = data.dropna().reset_index(drop=True)
+    # Drop NaN values ONLY from columns we actually use for entry signals
+    # Don't drop based on senkou_a, senkou_b, chikou since they're not used
+    data = data.dropna(subset=['tenkan', 'kijun', 'rsi']).reset_index(drop=True)
 
     if len(data) < max(tenkan_period, kijun_period, senkou_b_period, rsi_period) + 10:
         # Not enough data for meaningful backtest
