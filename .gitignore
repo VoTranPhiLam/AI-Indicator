@@ -36,6 +36,9 @@ env/
 .DS_Store
 Thumbs.db
 
+# Generated visualization HTML files
+*_visualization.html
+
 # Note: Keeping AUDCAD15.csv and results.csv for demonstration
 # In production, you may want to ignore these:
 # *.csv
