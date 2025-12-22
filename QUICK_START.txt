@@ -1,0 +1,117 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║                  🚀 HƯỚNG DẪN NHANH - QUICK START                      ║
+║                    AI-Indicator Backtesting System                     ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ 1️⃣  CÀI ĐẶT - INSTALLATION                                            │
+└────────────────────────────────────────────────────────────────────────┘
+
+    pip install pandas numpy
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ 2️⃣  CHẠY TEST NHANH - QUICK TEST (16 combinations, ~3 giây)           │
+└────────────────────────────────────────────────────────────────────────┘
+
+    python quick_test.py
+
+    Kết quả:
+    • File: quick_test_results.csv
+    • Top 5 tham số tốt nhất
+    • Chạy rất nhanh để hiểu cách hoạt động
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ 3️⃣  CHẠY ĐẦY ĐỦ - FULL OPTIMIZATION (650 combinations, ~10 giây)      │
+└────────────────────────────────────────────────────────────────────────┘
+
+    python backtest_optimizer.py
+
+    Kết quả:
+    • File: results.csv (86 KB)
+    • Top 10 tham số tốt nhất
+    • Tìm tham số tối ưu nhất
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ 4️⃣  TẠO DỮ LIỆU MẪU - GENERATE SAMPLE DATA                            │
+└────────────────────────────────────────────────────────────────────────┘
+
+    python generate_sample_data.py
+
+    Tạo file: AUDCAD15.csv (2500 candles)
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ 📊 HIỂU KẾT QUẢ - UNDERSTANDING RESULTS                               │
+└────────────────────────────────────────────────────────────────────────┘
+
+    Chỉ số tốt:
+    ✅ Total Profit:    > 0 pips (càng cao càng tốt)
+    ✅ Win Rate:        > 50% (tỷ lệ thắng)
+    ✅ Profit Factor:   > 1.5 (lời/lỗ)
+    ✅ Max Drawdown:    < 20% (rủi ro)
+    ✅ Score:           Càng cao càng tốt
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ 🔧 TÙY CHỈNH - CUSTOMIZATION                                          │
+└────────────────────────────────────────────────────────────────────────┘
+
+    Sửa trong file: backtest_optimizer.py
+
+    1. Thay đổi TP/SL:
+       tp_pips = 30.0    # Take Profit
+       sl_pips = 10.0    # Stop Loss
+
+    2. Thay đổi khoảng test:
+       param_grid = {
+           'rsi_period': list(range(10, 21)),  # 10-20
+           'overbought': [70, 80],             # 2 giá trị
+           'oversold': [20, 30]                # 2 giá trị
+       }
+
+    3. Dùng dữ liệu của bạn:
+       data_file = 'TEN_FILE_CUA_BAN.csv'
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ 📁 CẤU TRÚC FILES - FILE STRUCTURE                                     │
+└────────────────────────────────────────────────────────────────────────┘
+
+    backtest_optimizer.py       → Chương trình chính (650 tests)
+    quick_test.py               → Test nhanh (16 tests)
+    generate_sample_data.py     → Tạo dữ liệu mẫu
+    AUDCAD15.csv                → Dữ liệu input
+    results.csv                 → Kết quả đầy đủ
+    quick_test_results.csv      → Kết quả test nhanh
+    HUONG_DAN.md                → Hướng dẫn chi tiết
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ ⚠️  XỬ LÝ LỖI - TROUBLESHOOTING                                       │
+└────────────────────────────────────────────────────────────────────────┘
+
+    Lỗi: "File not found"
+    → python generate_sample_data.py
+
+    Lỗi: "No module named pandas"
+    → pip install pandas numpy
+
+    Lỗi: "No valid results"
+    → Thử thay đổi TP/SL hoặc khoảng tham số
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ 💡 TIPS                                                                │
+└────────────────────────────────────────────────────────────────────────┘
+
+    1. Bắt đầu với quick_test.py để hiểu cách hoạt động
+    2. Sau đó chạy backtest_optimizer.py để tối ưu
+    3. Thử nhiều khoảng tham số khác nhau
+    4. Test với dữ liệu thật của bạn
+    5. Không chỉ nhìn profit, cần xem cả drawdown và win rate
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ 📖 TÀI LIỆU CHI TIẾT - DETAILED DOCUMENTATION                          │
+└────────────────────────────────────────────────────────────────────────┘
+
+    📄 HUONG_DAN.md     → Hướng dẫn đầy đủ bằng tiếng Việt
+    📄 README.md        → Tài liệu kỹ thuật tiếng Anh
+
+╔════════════════════════════════════════════════════════════════════════╗
+║                         CHÚC BẠN THÀNH CÔNG! 🎉                        ║
+╚════════════════════════════════════════════════════════════════════════╝
