@@ -20,7 +20,8 @@ def visualize_backtest(csv_file: str,
                        bars_check_swing: int = 5,
                        spread_pips: float = 1.2,
                        lot_size: float = 0.01,
-                       max_candles: int = 500):
+                       max_candles: int = 500,
+                       symbol: str = None):
     """
     Tạo interactive chart visualization cho backtest
 
@@ -31,6 +32,18 @@ def visualize_backtest(csv_file: str,
     print("=" * 80)
     print(f"VISUALIZING ICHIMOKU BACKTEST: {csv_file}")
     print("=" * 80)
+
+    # Auto-detect symbol from filename if not provided
+    if symbol is None:
+        import re
+        filename = csv_file.split('/')[-1].replace('.csv', '')
+        # Extract symbol from filename (e.g., AUDUSD5.csv -> AUDUSD)
+        match = re.match(r'([A-Z]+)\d+', filename)
+        if match:
+            symbol = match.group(1)
+        else:
+            symbol = "EURUSD"  # Default
+        print(f"   Auto-detected symbol: {symbol}")
 
     # Load data
     data = load_data(csv_file, has_header=False)
@@ -43,6 +56,7 @@ def visualize_backtest(csv_file: str,
 
     # Run backtest
     print(f"\n🔄 Running backtest...")
+    print(f"   Symbol: {symbol} (pip value: {'0.01' if 'JPY' in symbol else '0.0001'})")
     print(f"   Tenkan: {tenkan_period}, Kijun: {kijun_period}, Senkou: {senkou_b_period}")
     print(f"   RSI: {rsi_period}, Buy>={rsi_buy_threshold}, Sell<={rsi_sell_threshold}")
     print(f"   RR: {risk_reward_ratio}, SL Buffer: {sl_buffer_pips} pips")
@@ -59,7 +73,8 @@ def visualize_backtest(csv_file: str,
         sl_buffer_pips=sl_buffer_pips,
         bars_check_swing=bars_check_swing,
         spread_pips=spread_pips,
-        lot_size=lot_size
+        lot_size=lot_size,
+        symbol=symbol  # Auto-detect pip value for JPY pairs
     )
 
     trades = result['trades']

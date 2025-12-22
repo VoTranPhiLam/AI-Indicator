@@ -36,7 +36,8 @@ try:
         sl_buffer_pips=3.0,
         bars_check_swing=5,
         spread_pips=1.2,
-        lot_size=0.01
+        lot_size=0.01,
+        symbol="AUDUSD"  # Auto-detect pip value
     )
 
     print("RESULTS:")

@@ -400,7 +400,8 @@ if run_optimization and st.session_state.get('selected_files'):
                     sl_buffer_pips=sl_buffer_pips,
                     bars_check_swing=bars_check_swing,
                     spread_pips=spread_pips,
-                    lot_size=lot_size
+                    lot_size=lot_size,
+                    symbol=file_info['symbol']  # Pass symbol to auto-detect JPY pairs
                 )
 
                 # Calculate score

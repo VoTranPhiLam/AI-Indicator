@@ -12,6 +12,32 @@ from typing import Dict, List, Tuple, Optional
 
 
 # ============================================================================
+# UTILITY FUNCTIONS
+# ============================================================================
+
+def get_pip_value(symbol: str) -> float:
+    """
+    Get pip value based on symbol type.
+
+    JPY pairs (USDJPY, EURJPY, etc.) use 3 digits: 1 pip = 0.01
+    Other pairs use 5 digits: 1 pip = 0.0001
+
+    Args:
+        symbol: Trading symbol (e.g., 'EURUSD', 'USDJPY')
+
+    Returns:
+        Pip value (0.01 for JPY pairs, 0.0001 for others)
+    """
+    symbol_upper = symbol.upper()
+
+    # Check if symbol contains JPY
+    if 'JPY' in symbol_upper:
+        return 0.01  # 3 digits: XXX.XX
+    else:
+        return 0.0001  # 5 digits: X.XXXXX
+
+
+# ============================================================================
 # DATA LOADING
 # ============================================================================
 
@@ -225,7 +251,7 @@ def backtest_strategy(
     bars_check_swing: int = 5,
     spread_pips: float = 1.2,
     lot_size: float = 0.01,
-    pip_value: float = 0.0001
+    symbol: str = "EURUSD"  # Used to detect JPY pairs for pip_value
 ) -> Dict:
     """
     Backtest Ichimoku + RSI Filter strategy on given data.
@@ -250,11 +276,14 @@ def backtest_strategy(
         bars_check_swing: Number of bars to check for swing high/low (default 5)
         spread_pips: Spread in pips
         lot_size: Position size
-        pip_value: Value of 1 pip (default 0.0001 for most pairs)
+        symbol: Trading symbol (used to detect JPY pairs for pip value)
 
     Returns:
         Dictionary with backtest results
     """
+    # Auto-detect pip value based on symbol (JPY pairs use 0.01, others use 0.0001)
+    pip_value = get_pip_value(symbol)
+
     # Calculate Ichimoku
     data = data.copy()
     data['tenkan'], data['kijun'], data['senkou_a'], data['senkou_b'], data['chikou'] = compute_ichimoku(
