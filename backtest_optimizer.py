@@ -322,7 +322,9 @@ def backtest_strategy(
     symbol: str = "EURUSD",  # Used to detect JPY pairs for pip_value
     initial_balance: float = 10000.0,  # Starting balance for % risk calculation
     risk_percent_per_trade: float = 0.0,  # Risk % per trade (0 = use fixed lot_size)
-    max_lot_size: float = 100.0  # Maximum lot size allowed
+    max_lot_size: float = 100.0,  # Maximum lot size allowed
+    max_sl_pips: float = 0.0,  # Maximum SL distance in pips (0 = no limit)
+    max_tp_pips: float = 0.0  # Maximum TP distance in pips (0 = no limit)
 ) -> Dict:
     """
     Backtest Ichimoku + RSI Filter strategy on given data.
@@ -334,6 +336,7 @@ def backtest_strategy(
     - TP: Risk:Reward ratio (default 1:1.2)
     - One position at a time
     - Lot sizing: Fixed or % risk based
+    - Optional: Max SL/TP limits
 
     Args:
         data: DataFrame with OHLCV data
@@ -500,7 +503,24 @@ def backtest_strategy(
 
                 # Calculate TP: Entry + (Risk * RR_Ratio)
                 sl_distance = entry_price - stop_loss
-                take_profit = entry_price + (sl_distance * risk_reward_ratio)
+
+                # Apply max SL limit if specified
+                if max_sl_pips > 0:
+                    max_sl_distance = max_sl_pips * pip_value
+                    if sl_distance > max_sl_distance:
+                        sl_distance = max_sl_distance
+                        stop_loss = entry_price - sl_distance
+
+                # Calculate TP distance
+                tp_distance = sl_distance * risk_reward_ratio
+
+                # Apply max TP limit if specified
+                if max_tp_pips > 0:
+                    max_tp_distance = max_tp_pips * pip_value
+                    if tp_distance > max_tp_distance:
+                        tp_distance = max_tp_distance
+
+                take_profit = entry_price + tp_distance
 
                 # Calculate lot size based on % risk (if enabled)
                 if risk_percent_per_trade > 0:
@@ -525,7 +545,24 @@ def backtest_strategy(
 
                 # Calculate TP: Entry - (Risk * RR_Ratio)
                 sl_distance = stop_loss - entry_price
-                take_profit = entry_price - (sl_distance * risk_reward_ratio)
+
+                # Apply max SL limit if specified
+                if max_sl_pips > 0:
+                    max_sl_distance = max_sl_pips * pip_value
+                    if sl_distance > max_sl_distance:
+                        sl_distance = max_sl_distance
+                        stop_loss = entry_price + sl_distance
+
+                # Calculate TP distance
+                tp_distance = sl_distance * risk_reward_ratio
+
+                # Apply max TP limit if specified
+                if max_tp_pips > 0:
+                    max_tp_distance = max_tp_pips * pip_value
+                    if tp_distance > max_tp_distance:
+                        tp_distance = max_tp_distance
+
+                take_profit = entry_price - tp_distance
 
                 # Calculate lot size based on % risk (if enabled)
                 if risk_percent_per_trade > 0:

@@ -324,6 +324,20 @@ with st.sidebar:
             risk_percent_per_trade = 0.0  # Disabled
 
     st.markdown("---")
+    st.subheader("⚠️ Giới Hạn Lời/Lỗ Mỗi Lệnh")
+
+    col12, col13 = st.columns(2)
+    with col12:
+        max_sl_pips = st.number_input("Max SL (pips)", 0.0, 1000.0, 0.0, 10.0,
+                                     help="Giới hạn SL tối đa (0 = không giới hạn). VD: 100 = SL không quá 100 pips")
+    with col13:
+        max_tp_pips = st.number_input("Max TP (pips)", 0.0, 1000.0, 0.0, 10.0,
+                                     help="Giới hạn TP tối đa (0 = không giới hạn). VD: 150 = TP không quá 150 pips")
+
+    if max_sl_pips > 0 or max_tp_pips > 0:
+        st.info(f"💡 Giới hạn: SL ≤ {int(max_sl_pips) if max_sl_pips > 0 else '∞'} pips | TP ≤ {int(max_tp_pips) if max_tp_pips > 0 else '∞'} pips")
+
+    st.markdown("---")
 
     # Optimization Settings
     st.subheader("🔧 Cài Đặt")
@@ -425,7 +439,9 @@ if run_optimization and st.session_state.get('selected_files'):
                     symbol=file_info['symbol'],  # Pass symbol to auto-detect JPY pairs
                     initial_balance=initial_balance,  # Starting balance
                     risk_percent_per_trade=risk_percent_per_trade,  # % risk or 0 for fixed lot
-                    max_lot_size=max_lot_size  # Maximum lot allowed
+                    max_lot_size=max_lot_size,  # Maximum lot allowed
+                    max_sl_pips=max_sl_pips,  # Max SL distance in pips
+                    max_tp_pips=max_tp_pips  # Max TP distance in pips
                 )
 
                 # Calculate score
